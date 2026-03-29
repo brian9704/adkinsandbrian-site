@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>我们的首页</title>
+  <style>
+    body { font-family: sans-serif; padding: 40px; }
+    h1 { color: #333; }
+    p { color: #555; }
+  </style>
+</head>
+<body>
+  <h1 id="title"></h1>
+  <p id="desc"></p>
+
+  <script>
+    fetch('data/site.json')
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('title').innerText = data.title;
+        document.getElementById('desc').innerText = data.desc;
+      });
+  </script>
+</body>
+</html>
