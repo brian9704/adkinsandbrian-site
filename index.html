@@ -2,16 +2,22 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>我们的首页</title>
+  <title>网站首页</title>
   <style>
-    body { font-family: sans-serif; padding: 40px; }
+    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
     h1 { color: #333; }
-    p { color: #555; }
+    nav a { margin-right: 15px; color: #0077cc; text-decoration: none; }
+    img { max-width: 300px; margin: 10px; }
   </style>
 </head>
 <body>
-  <h1 id="title"></h1>
-  <p id="desc"></p>
+
+  <h1 id="title">加载中...</h1>
+  <p id="desc">加载中...</p>
+
+  <nav id="nav"></nav>
+
+  <div id="images"></div>
 
   <script>
     fetch('data/site.json')
@@ -19,7 +25,23 @@
       .then(data => {
         document.getElementById('title').innerText = data.title;
         document.getElementById('desc').innerText = data.desc;
+
+        const navEl = document.getElementById('nav');
+        data.nav.forEach(item => {
+          const a = document.createElement('a');
+          a.href = item.link;
+          a.innerText = item.name;
+          navEl.appendChild(a);
+        });
+
+        const imgEl = document.getElementById('images');
+        data.images.forEach(src => {
+          const img = document.createElement('img');
+          img.src = src;
+          imgEl.appendChild(img);
+        });
       });
   </script>
+
 </body>
 </html>
