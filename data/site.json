@@ -1,4 +1,13 @@
 {
   "title": "欢迎来到我们的网站",
-  "desc": "这里是网站描述，可在后台修改"
+  "desc": "这里是网站描述，可以在后台修改",
+  "nav": [
+    { "name": "首页", "link": "index.html" },
+    { "name": "关于", "link": "about.html" },
+    { "name": "联系", "link": "contact.html" }
+  ],
+  "images": [
+    "assets/img1.jpg",
+    "assets/img2.jpg"
+  ]
 }
