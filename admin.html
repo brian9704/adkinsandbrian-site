@@ -2,65 +2,118 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>网站后台 ❤️</title>
+  <title>网站后台管理 ❤️</title>
 </head>
 <body>
-  <h2>修改网站内容</h2>
 
-  标题：<br>
-  <input id="title" style="width:300px"><br><br>
+<h2>修改网站内容</h2>
 
-  描述：<br>
-  <input id="desc" style="width:300px"><br><br>
+标题：<br>
+<input id="title" style="width:300px"><br><br>
 
-  <button onclick="save()">保存</button>
-  <p id="msg"></p>
+描述：<br>
+<input id="desc" style="width:300px"><br><br>
 
-  <script>
-    const owner = "brian9704"; // brian9704
-    const repo = "adkinsandbrian-site"; // adkinsandbrian-site
-    const filePath = "data/site.json";
-    const token = "你的GitHubToken"; // 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
+<h3>导航栏</h3>
+<div id="navList"></div>
+<button onclick="addNav()">+ 添加导航</button><br><br>
 
-    let sha = "";
+<h3>图片</h3>
+<div id="imgList"></div>
+<button onclick="addImage()">+ 添加图片</button><br><br>
 
-    async function load() {
-      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`);
-      const data = await res.json();
-      const content = JSON.parse(atob(data.content));
-      document.getElementById('title').value = content.title || "";
-      document.getElementById('desc').value = content.desc || "";
-      sha = data.sha;
-    }
+<button onclick="save()">保存全部内容</button>
+<p id="msg"></p>
 
-    load();
+<script>
+const owner = "brian9704";
+const repo = "adkinsandbrian-site";
+const filePath = "data/site.json";
+const token = "你的GitHubToken"; // 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
 
-    async function save() {
-      const newData = {
-        title: document.getElementById('title').value,
-        desc: document.getElementById('desc').value
-      };
-      const content = btoa(JSON.stringify(newData, null, 2));
+let sha = "";
+let siteData = { title:"", desc:"", nav:[], images:[] };
 
-      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
-        method: "PUT",
-        headers: {
-          Authorization: "token " + token,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          message: "update from admin",
-          content: content,
-          sha: sha
-        })
-      });
+async function load() {
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`);
+  const data = await res.json();
+  siteData = JSON.parse(atob(data.content));
+  sha = data.sha;
 
-      if(res.ok){
-        document.getElementById('msg').innerText = "✅ 保存成功！刷新首页查看";
-      } else {
-        document.getElementById('msg').innerText = "❌ 保存失败，请检查 Token";
-      }
-    }
-  </script>
+  document.getElementById('title').value = siteData.title;
+  document.getElementById('desc').value = siteData.desc;
+
+  renderNav();
+  renderImages();
+}
+
+function renderNav(){
+  const container = document.getElementById('navList');
+  container.innerHTML = "";
+  siteData.nav.forEach((item, idx) => {
+    container.innerHTML += `
+      名称: <input value="${item.name}" onchange="siteData.nav[${idx}].name=this.value">
+      链接: <input value="${item.link}" onchange="siteData.nav[${idx}].link=this.value">
+      <button onclick="removeNav(${idx})">删除</button><br>`;
+  });
+}
+function addNav(){
+  siteData.nav.push({name:"新导航", link:""});
+  renderNav();
+}
+function removeNav(idx){
+  siteData.nav.splice(idx,1);
+  renderNav();
+}
+
+function renderImages(){
+  const container = document.getElementById('imgList');
+  container.innerHTML = "";
+  siteData.images.forEach((src, idx) => {
+    container.innerHTML += `
+      图片路径: <input value="${src}" onchange="siteData.images[${idx}]=this.value">
+      <button onclick="removeImage(${idx})">删除</button><br>`;
+  });
+}
+function addImage(){
+  siteData.images.push("assets/新图片.jpg");
+  renderImages();
+}
+function removeImage(idx){
+  siteData.images.splice(idx,1);
+  renderImages();
+}
+
+async function save(){
+  siteData.title = document.getElementById('title').value;
+  siteData.desc = document.getElementById('desc').value;
+
+  const content = btoa(JSON.stringify(siteData,null,2));
+
+  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,{
+    method:"PUT",
+    headers:{
+      Authorization:"token "+token,
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify({
+      message:"update from admin",
+      content:content,
+      sha:sha
+    })
+  });
+  if(res.ok){
+    const result = await res.json();
+    sha = result.content.sha;
+    document.getElementById('msg').innerText = "✅ 保存成功！刷新首页查看";
+  }else{
+    const err = await res.json();
+    document.getElementById('msg').innerText = "❌ 保存失败："+err.message;
+  }
+}
+
+load();
+</script>
+
 </body>
 </html>
