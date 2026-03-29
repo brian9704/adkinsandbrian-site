@@ -3,24 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <title>网站后台管理 ❤️</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input { margin-bottom: 5px; width:300px; }
+    .dropzone { width: 300px; height: 100px; border: 2px dashed #0077cc; display:flex; align-items:center; justify-content:center; color:#555; margin-bottom:10px; }
+    .dropzone.dragover { background: #e0f0ff; }
+    .nav-item, .child-item { margin-bottom:5px; }
+    button { margin-left:5px; }
+  </style>
 </head>
 <body>
 
 <h2>修改网站内容</h2>
 
 标题：<br>
-<input id="title" style="width:300px"><br><br>
+<input id="title"><br><br>
 
 描述：<br>
-<input id="desc" style="width:300px"><br><br>
+<input id="desc"><br><br>
 
 <h3>导航栏</h3>
 <div id="navList"></div>
-<button onclick="addNav()">+ 添加导航</button><br><br>
+<button onclick="addNav()">+ 添加一级导航</button><br><br>
 
-<h3>图片</h3>
-<div id="imgList"></div>
-<button onclick="addImage()">+ 添加图片</button><br><br>
+<h3>图片管理</h3>
+<div class="dropzone" id="dropzone">拖拽图片到这里上传</div>
+<div id="imgList"></div><br>
 
 <button onclick="save()">保存全部内容</button>
 <p id="msg"></p>
@@ -34,81 +42,121 @@ const token = "你的GitHubToken"; // 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
 let sha = "";
 let siteData = { title:"", desc:"", nav:[], images:[] };
 
-async function load() {
+async function load(){
   const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`);
   const data = await res.json();
   siteData = JSON.parse(atob(data.content));
   sha = data.sha;
-
   document.getElementById('title').value = siteData.title;
   document.getElementById('desc').value = siteData.desc;
-
   renderNav();
   renderImages();
 }
 
+// 导航管理
 function renderNav(){
   const container = document.getElementById('navList');
   container.innerHTML = "";
-  siteData.nav.forEach((item, idx) => {
-    container.innerHTML += `
-      名称: <input value="${item.name}" onchange="siteData.nav[${idx}].name=this.value">
-      链接: <input value="${item.link}" onchange="siteData.nav[${idx}].link=this.value">
-      <button onclick="removeNav(${idx})">删除</button><br>`;
+  siteData.nav.forEach((item, idx)=>{
+    const wrapper = document.createElement("div");
+    wrapper.className="nav-item";
+    wrapper.innerHTML = `一级名称:<input value="${item.name}" onchange="siteData.nav[${idx}].name=this.value">
+                         一级链接:<input value="${item.link}" onchange="siteData.nav[${idx}].link=this.value">
+                         <button onclick="removeNav(${idx})">删除</button>`;
+
+    // 二级菜单
+    if(!item.children) item.children=[];
+    item.children.forEach((sub, subIdx)=>{
+      const childDiv = document.createElement("div");
+      childDiv.className="child-item";
+      childDiv.innerHTML = `二级名称:<input value="${sub.name}" onchange="siteData.nav[${idx}].children[${subIdx}].name=this.value">
+                            二级链接:<input value="${sub.link}" onchange="siteData.nav[${idx}].children[${subIdx}].link=this.value">
+                            <button onclick="removeChild(${idx},${subIdx})">删除</button>`;
+      wrapper.appendChild(childDiv);
+    });
+
+    const addChildBtn = document.createElement("button");
+    addChildBtn.innerText="+ 添加二级";
+    addChildBtn.onclick = ()=>{ siteData.nav[idx].children.push({name:"新二级", link:"#"}); renderNav(); };
+    wrapper.appendChild(addChildBtn);
+
+    container.appendChild(wrapper);
   });
 }
-function addNav(){
-  siteData.nav.push({name:"新导航", link:""});
-  renderNav();
-}
-function removeNav(idx){
-  siteData.nav.splice(idx,1);
-  renderNav();
-}
 
+function addNav(){ siteData.nav.push({name:"新一级", link:"#", children:[]}); renderNav(); }
+function removeNav(idx){ siteData.nav.splice(idx,1); renderNav(); }
+function removeChild(idx,subIdx){ siteData.nav[idx].children.splice(subIdx,1); renderNav(); }
+
+// 图片管理
 function renderImages(){
   const container = document.getElementById('imgList');
   container.innerHTML = "";
-  siteData.images.forEach((src, idx) => {
-    container.innerHTML += `
-      图片路径: <input value="${src}" onchange="siteData.images[${idx}]=this.value">
-      <button onclick="removeImage(${idx})">删除</button><br>`;
+  siteData.images.forEach((src, idx)=>{
+    container.innerHTML += `图片路径:<input value="${src}" onchange="siteData.images[${idx}]=this.value">
+                            <button onclick="removeImage(${idx})">删除</button><br>`;
   });
 }
-function addImage(){
-  siteData.images.push("assets/新图片.jpg");
-  renderImages();
-}
-function removeImage(idx){
-  siteData.images.splice(idx,1);
-  renderImages();
-}
+function removeImage(idx){ siteData.images.splice(idx,1); renderImages(); }
 
+// 拖拽上传
+const dropzone = document.getElementById('dropzone');
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', e => { dropzone.classList.remove('dragover'); });
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  const files = e.dataTransfer.files;
+  for(let f of files){
+    const reader = new FileReader();
+    reader.onload = async function(){
+      const content = btoa(reader.result.split(',')[1]);
+      const path = `public/${f.name}`;
+      try{
+        const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${path}`,{
+          method:"PUT",
+          headers:{Authorization:"token "+token,"Content-Type":"application/json"},
+          body: JSON.stringify({message:"upload "+f.name, content:content})
+        });
+        if(res.ok){
+          siteData.images.push(path);
+          renderImages();
+          document.getElementById('msg').innerText = `✅ ${f.name} 上传成功`;
+        } else {
+          const err = await res.json();
+          document.getElementById('msg').innerText = "❌ 上传失败："+err.message;
+        }
+      }catch(err){
+        console.error(err);
+        document.getElementById('msg').innerText = "❌ 上传失败："+err.message;
+      }
+    };
+    reader.readAsDataURL(f);
+  }
+});
+
+// 保存 site.json
 async function save(){
   siteData.title = document.getElementById('title').value;
   siteData.desc = document.getElementById('desc').value;
-
   const content = btoa(JSON.stringify(siteData,null,2));
-
-  const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,{
-    method:"PUT",
-    headers:{
-      Authorization:"token "+token,
-      "Content-Type":"application/json"
-    },
-    body: JSON.stringify({
-      message:"update from admin",
-      content:content,
-      sha:sha
-    })
-  });
-  if(res.ok){
-    const result = await res.json();
-    sha = result.content.sha;
-    document.getElementById('msg').innerText = "✅ 保存成功！刷新首页查看";
-  }else{
-    const err = await res.json();
-    document.getElementById('msg').innerText = "❌ 保存失败："+err.message;
+  try{
+    const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`,{
+      method:"PUT",
+      headers:{Authorization:"token "+token,"Content-Type":"application/json"},
+      body: JSON.stringify({message:"update from admin", content:content, sha:sha})
+    });
+    if(res.ok){
+      const result = await res.json();
+      sha = result.content.sha;
+      document.getElementById('msg').innerText="✅ 保存成功！刷新首页查看";
+    } else {
+      const err = await res.json();
+      document.getElementById('msg').innerText="❌ 保存失败："+err.message;
+    }
+  }catch(err){
+    console.error(err);
+    document.getElementById('msg').innerText="❌ 保存失败："+err.message;
   }
 }
 
