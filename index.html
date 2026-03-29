@@ -2,46 +2,81 @@
 <html lang="zh">
 <head>
   <meta charset="UTF-8">
-  <title>网站首页</title>
+  <title>我们的网站</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; background: #f9f9f9; }
+    body { font-family: sans-serif; padding: 40px; background: #f9f9f9; }
     h1 { color: #333; }
-    nav a { margin-right: 15px; color: #0077cc; text-decoration: none; }
+    p { color: #555; }
+    nav ul { list-style:none; padding:0; display:flex; }
+    nav ul li { position: relative; margin-right: 20px; }
+    nav ul li a { text-decoration: none; color: #0077cc; padding: 5px 10px; display:block; }
+    nav ul li ul {
+      display: none;
+      position: absolute;
+      top: 30px;
+      left: 0;
+      list-style:none;
+      padding:0;
+      margin:0;
+      background:#f9f9f9;
+      border:1px solid #ddd;
+      z-index:100;
+    }
+    nav ul li:hover ul { display: block; }
+    nav ul li ul li { width: 150px; }
+    nav ul li ul li a { padding:5px; }
     img { max-width: 300px; margin: 10px; }
   </style>
 </head>
 <body>
 
-  <h1 id="title">加载中...</h1>
-  <p id="desc">加载中...</p>
+<h1 id="title">加载中...</h1>
+<p id="desc">加载中...</p>
 
-  <nav id="nav"></nav>
+<nav>
+  <ul id="nav"></ul>
+</nav>
 
-  <div id="images"></div>
+<div id="images"></div>
 
-  <script>
-    fetch('data/site.json')
-      .then(res => res.json())
-      .then(data => {
-        document.getElementById('title').innerText = data.title;
-        document.getElementById('desc').innerText = data.desc;
+<script>
+fetch('data/site.json')
+  .then(res => res.json())
+  .then(data => {
+    document.getElementById('title').innerText = data.title;
+    document.getElementById('desc').innerText = data.desc;
 
-        const navEl = document.getElementById('nav');
-        data.nav.forEach(item => {
-          const a = document.createElement('a');
-          a.href = item.link;
-          a.innerText = item.name;
-          navEl.appendChild(a);
+    const navEl = document.getElementById('nav');
+    data.nav.forEach(item => {
+      const li = document.createElement('li');
+      const a = document.createElement('a');
+      a.href = item.link;
+      a.innerText = item.name;
+      li.appendChild(a);
+
+      if(item.children && item.children.length > 0){
+        const ul = document.createElement('ul');
+        item.children.forEach(sub => {
+          const subLi = document.createElement('li');
+          const subA = document.createElement('a');
+          subA.href = sub.link;
+          subA.innerText = sub.name;
+          subLi.appendChild(subA);
+          ul.appendChild(subLi);
         });
+        li.appendChild(ul);
+      }
+      navEl.appendChild(li);
+    });
 
-        const imgEl = document.getElementById('images');
-        data.images.forEach(src => {
-          const img = document.createElement('img');
-          img.src = src;
-          imgEl.appendChild(img);
-        });
-      });
-  </script>
+    const imgEl = document.getElementById('images');
+    data.images.forEach(src => {
+      const img = document.createElement('img');
+      img.src = src;
+      imgEl.appendChild(img);
+    });
+  });
+</script>
 
 </body>
 </html>
