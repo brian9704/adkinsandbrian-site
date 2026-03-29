@@ -2,12 +2,22 @@
   "title": "欢迎来到我们的网站",
   "desc": "这里是网站描述，可以在后台修改",
   "nav": [
-    { "name": "首页", "link": "index.html" },
-    { "name": "关于", "link": "about.html" },
-    { "name": "联系", "link": "contact.html" }
+    {
+      "name": "首页",
+      "link": "index.html"
+    },
+    {
+      "name": "Awards",
+      "link": "#",
+      "children": [
+        {"name": "2022", "link": "https://adkins-site.pages.dev/awards/2022/"},
+        {"name": "2023", "link": "https://adkins-site.pages.dev/awards/2023/"}
+      ]
+    },
+    {
+      "name": "关于我们",
+      "link": "about.html"
+    }
   ],
-  "images": [
-    "assets/img1.jpg",
-    "assets/img2.jpg"
-  ]
+  "images": []
 }
