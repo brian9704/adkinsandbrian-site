@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <title>网站后台 ❤️</title>
+</head>
+<body>
+  <h2>修改网站内容</h2>
+
+  标题：<br>
+  <input id="title" style="width:300px"><br><br>
+
+  描述：<br>
+  <input id="desc" style="width:300px"><br><br>
+
+  <button onclick="save()">保存</button>
+  <p id="msg"></p>
+
+  <script>
+    const owner = "brian9704"; // brian9704
+    const repo = "adkinsandbrian-site"; // adkinsandbrian-site
+    const filePath = "data/site.json";
+    const token = "你的GitHubToken"; // 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
+
+    let sha = "";
+
+    async function load() {
+      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`);
+      const data = await res.json();
+      const content = JSON.parse(atob(data.content));
+      document.getElementById('title').value = content.title || "";
+      document.getElementById('desc').value = content.desc || "";
+      sha = data.sha;
+    }
+
+    load();
+
+    async function save() {
+      const newData = {
+        title: document.getElementById('title').value,
+        desc: document.getElementById('desc').value
+      };
+      const content = btoa(JSON.stringify(newData, null, 2));
+
+      const res = await fetch(`https://api.github.com/repos/${owner}/${repo}/contents/${filePath}`, {
+        method: "PUT",
+        headers: {
+          Authorization: "token " + token,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          message: "update from admin",
+          content: content,
+          sha: sha
+        })
+      });
+
+      if(res.ok){
+        document.getElementById('msg').innerText = "✅ 保存成功！刷新首页查看";
+      } else {
+        document.getElementById('msg').innerText = "❌ 保存失败，请检查 Token";
+      }
+    }
+  </script>
+</body>
+</html>
